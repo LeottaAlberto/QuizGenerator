@@ -10,6 +10,14 @@ console.log("--- INIZIALIZZAZIONE FUNZIONE API AVVIATA ---");
 let pdfParseLib = require('pdf-parse');
 if (typeof pdfParseLib !== 'function' && pdfParseLib.default) pdfParseLib = pdfParseLib.default;
 
+// *** NUOVO LOG DI VERIFICA ***
+if (!pdfParseLib) {
+    console.error("ERRORE: La libreria pdf-parse non è stata caricata correttamente.");
+} else {
+    console.log("pdf-parse caricata con successo.");
+}
+// ****************************
+
 const app = express();
 
 app.use(cors());
@@ -42,70 +50,83 @@ const router = express.Router();
 // ROUTE 1: ESTRAZIONE TESTO (Gestisce Base64 inviato via JSON)
 // -----------------------------------------------------------------
 router.post('/extract-text', async (req, res) => {
-    console.log('--- Chiamata all\'API: extract-text ---');
-
-    // Il frontend DEVE inviare { file: base64String, filename: string, mimetype: string }
-    const { file: base64Data, filename, mimetype } = req.body; 
-
-    if (!base64Data || !mimetype) {
-        console.error("Corpo della richiesta NON CONTIENE Base64 (req.body mancante o malformato).");
-        return res.status(400).json({ error: "Richiesta non valida: dati file Base64 mancanti." });
-    }
-
-    // Decodifica Base64 in Buffer
-    let fileBuffer;
+    // Aggiunto un try...catch generale per catturare errori non previsti
     try {
-        fileBuffer = Buffer.from(base64Data, 'base64');
-        console.log(`Buffer creato con successo, dimensione: ${fileBuffer.length} bytes`); 
-    } catch (e) {
-        console.error("Errore decodifica Base64:", e.message);
-        return res.status(400).json({ error: "Impossibile decodificare il file Base64." });
-    }
-    
-    // Processa il Buffer
-    try {
-        let extractedText = "";
+        console.log('--- Chiamata all\'API: extract-text ---');
 
-        if (mimetype === 'application/pdf') {
-            console.log('Tentativo di parsing PDF...');
-            // *** INIZIO MODIFICA PER GESTIONE ERRORI PDF ***
-            try {
-                const data = await pdfParseLib(fileBuffer);
-                extractedText = data.text || ''; // Assicura che sia una stringa vuota in caso di null
-                
-                // Controllo cruciale: se il testo è vuoto nonostante il parsing sia terminato
-                if (extractedText.trim() === '') {
-                    console.error("AVVISO: pdf-parse ha restituito testo vuoto. Il PDF potrebbe essere una scansione o contenere solo elementi matematici non estraibili.");
-                    // Lanciamo un errore che verrà catturato dal blocco esterno
-                    throw new Error("Il parser PDF ha restituito testo vuoto. Il file potrebbe essere una scansione o non contenere testo standard (solo formule/immagini).");
-                }
+        // Il frontend DEVE inviare { file: base64String, filename: string, mimetype: string }
+        const { file: base64Data, filename, mimetype } = req.body; 
 
-                console.log(`Parsing PDF completato. Lunghezza estratta: ${extractedText.length}`);
-            } catch (pdfError) {
-                // Gestisce gli errori interni di pdf-parse (es. file corrotto, password protetta)
-                console.error("ERRORE CRITICO durante il parsing PDF:", pdfError.message);
-                // Rilancia un errore descrittivo che verrà catturato dal blocco esterno
-                throw new Error("Errore durante l'analisi del PDF. Controlla il file (potrebbe essere corrotto o protetto).");
-            }
-            // *** FINE MODIFICA ***
-        } else if (mimetype.includes('word') || mimetype.includes('officedocument')) {
-            const mammoth = require('mammoth');
-            console.log('Tentativo di parsing DOCX...');
-            const result = await mammoth.extractRawText({ buffer: fileBuffer });
-            extractedText = result.value;
-            console.log('Parsing DOCX completato.');
-        } else {
-            // File di testo semplice
-            extractedText = fileBuffer.toString('utf8');
+        if (!base64Data || !mimetype) {
+            console.error("Corpo della richiesta NON CONTIENE Base64 (req.body mancante o malformato).");
+            return res.status(400).json({ error: "Richiesta non valida: dati file Base64 mancanti." });
+        }
+        
+        if (mimetype === 'application/pdf' && !pdfParseLib) {
+             return res.status(500).json({ error: "Errore di configurazione del server: libreria PDF non disponibile." });
         }
 
-        extractedText = extractedText.replace(/\r\n/g, '\n');
-        // Limita a 60K caratteri per evitare di superare il limite di token di Gemini
-        res.json({ text: extractedText.substring(0, 60000) });
+
+        // Decodifica Base64 in Buffer
+        let fileBuffer;
+        try {
+            fileBuffer = Buffer.from(base64Data, 'base64');
+            console.log(`Buffer creato con successo, dimensione: ${fileBuffer.length} bytes`); 
+        } catch (e) {
+            console.error("Errore decodifica Base64:", e.message);
+            return res.status(400).json({ error: "Impossibile decodificare il file Base64." });
+        }
         
-    } catch (error) {
-        console.error("Errore lettura file/parsing:", error.message);
-        res.status(500).json({ error: 'Errore durante la lettura o il parsing del file: ' + error.message });
+        // Processa il Buffer
+        try {
+            let extractedText = "";
+
+            if (mimetype === 'application/pdf') {
+                console.log('Tentativo di parsing PDF...');
+                // *** INIZIO MODIFICA PER GESTIONE ERRORI PDF ***
+                try {
+                    const data = await pdfParseLib(fileBuffer);
+                    extractedText = data.text || ''; // Assicura che sia una stringa vuota in caso di null
+                    
+                    // Controllo cruciale: se il testo è vuoto nonostante il parsing sia terminato
+                    if (extractedText.trim() === '') {
+                        console.error("AVVISO: pdf-parse ha restituito testo vuoto. Il PDF potrebbe essere una scansione o contenere solo elementi matematici non estraibili.");
+                        // Lanciamo un errore che verrà catturato dal blocco esterno
+                        throw new Error("Il parser PDF ha restituito testo vuoto. Il file potrebbe essere una scansione o non contenere testo standard (solo formule/immagini).");
+                    }
+
+                    console.log(`Parsing PDF completato. Lunghezza estratta: ${extractedText.length}`);
+                } catch (pdfError) {
+                    // Gestisce gli errori interni di pdf-parse (es. file corrotto, password protetta)
+                    console.error("ERRORE CRITICO durante il parsing PDF:", pdfError.message);
+                    // Rilancia un errore descrittivo che verrà catturato dal blocco esterno
+                    throw new Error("Errore durante l'analisi del PDF. Controlla il file (potrebbe essere corrotto o protetto).");
+                }
+                // *** FINE MODIFICA ***
+            } else if (mimetype.includes('word') || mimetype.includes('officedocument')) {
+                const mammoth = require('mammoth');
+                console.log('Tentativo di parsing DOCX...');
+                const result = await mammoth.extractRawText({ buffer: fileBuffer });
+                extractedText = result.value;
+                console.log('Parsing DOCX completato.');
+            } else {
+                // File di testo semplice
+                extractedText = fileBuffer.toString('utf8');
+            }
+
+            extractedText = extractedText.replace(/\r\n/g, '\n');
+            // Limita a 60K caratteri per evitare di superare il limite di token di Gemini
+            res.json({ text: extractedText.substring(0, 60000) });
+            
+        } catch (error) {
+            console.error("Errore lettura file/parsing (interno):", error.message);
+            res.status(500).json({ error: 'Errore durante la lettura o il parsing del file: ' + error.message });
+        }
+    } catch (generalError) {
+         // CATTURA GLI ERRORI CHE HANNO SUPERATO I BLOCCHI INTERNI (es. Time-out o Errori di ambiente)
+         console.error("Errore FATALE non gestito nell'endpoint /extract-text:", generalError.message);
+         // Assicuriamo una risposta JSON valida anche per errori catastrofici
+         res.status(500).json({ error: "Errore interno del server non gestito. Probabile timeout o esaurimento della memoria." });
     }
 });
 
