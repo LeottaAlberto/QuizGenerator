@@ -29,9 +29,8 @@ const submitQuizBtn = document.getElementById('submitQuizBtn');
 
 // Funzione helper per mostrare messaggi (sostituire alert())
 function alertMessage(message, type = 'info') {
-    console.log(`ALERT (${type}): ${message}`);
-    // In un'applicazione reale, qui useresti un modal o un toaster. 
-    // Per ora, usiamo l'alert standard, ma logghiamo anche.
+    const color = type === 'error' ? 'red' : type === 'success' ? 'green' : 'blue';
+    console.error(`[MESSAGGIO ${type.toUpperCase()}] %c${message}`, `color: ${color}; font-weight: bold;`);
     alert(message);
 }
 
@@ -128,7 +127,7 @@ if (fileInput) {
             // Aggiorna l'interfaccia con il testo estratto
             if (previewTextDiv) {
                 // Utilizza la funzione di formattazione per visualizzare il testo meglio
-                previewTextDiv.innerHTML = formatExtractedText(extractedTextContent.substring(0, 1000) + '...');
+                previewTextDiv.innerHTML = formatExtractedText(extractedTextContent.substring(0, 1000) + '... (Testo completo estratto nel backend)');
             }
             
             // Usiamo l'elemento DOM selezionato all'inizio
@@ -137,6 +136,8 @@ if (fileInput) {
             }
             
             if (configForm) configForm.style.display = 'block';
+
+            alertMessage('Testo estratto con successo!', 'success'); // Messaggio di successo
 
         } catch (error) {
             console.error('Errore durante l\'estrazione:', error);
@@ -182,13 +183,13 @@ if (quizForm) {
 
             if (data.quiz) {
                 renderQuiz(data.quiz, config.questionType);
+                alertMessage('Quiz generato con successo!', 'success');
             } else {
                 // Gestione errore specifica
-                alertMessage("Errore: " + (data.error || "L'AI non ha generato un JSON valido. Riprova, a volte capita."));
+                alertMessage("Errore: " + (data.error || "L'AI non ha generato un JSON valido. Riprova, a volte capita."), 'error');
             }
         } catch (err) {
-            // CORREZIONE: Uso della funzione helper alertMessage invece di alert() standard
-            alertMessage("Errore comunicazione server.");
+            alertMessage("Errore comunicazione server.", 'error');
         } finally {
             if (generateBtn) generateBtn.disabled = false;
             if (loadingSpinner) loadingSpinner.classList.add('d-none');
