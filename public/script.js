@@ -61,6 +61,8 @@ fileInput.addEventListener('change', async (e) => {
     const formData = new FormData();
     formData.append('file', file);
 
+    console.log(formData);
+    
     try {
         const response = await fetch('/api/extract-text', {
             method: 'POST',
