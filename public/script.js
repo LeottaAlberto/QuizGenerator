@@ -14,7 +14,7 @@ const katexConfig = {
 // --- ELEMENTI DOM (Selezione completa e sicura) ---
 const fileInput = document.getElementById('fileInput');
 const previewCard = document.getElementById('previewCard');
-const previewTextDiv = document.getElementById('previewTextDiv');
+const previewTextDiv = document.getElementById('previewText');
 const extractedTextCountElement = document.getElementById('extractedTextCount');
 const configForm = document.getElementById('configForm');
 const typeSelect = document.getElementById('typeSelect');
@@ -25,6 +25,7 @@ const loadingSpinner = document.getElementById('loadingSpinner');
 const quizArea = document.getElementById('quizArea');
 const questionsContainer = document.getElementById('questionsContainer');
 const submitQuizBtn = document.getElementById('submitQuizBtn');
+const pre
 // --------------------------------------------------
 
 // Funzione helper per mostrare messaggi (sostituire alert())
