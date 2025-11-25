@@ -162,7 +162,7 @@
 // netlify/functions/api.js
 const serverless = require('serverless-http');
 const express = require('express');
-const multer = require('multer');
+// const multer = require('multer');
 const cors = require('cors');
 const fetch = require('node-fetch');
 
@@ -172,7 +172,7 @@ if (typeof pdfParseLib !== 'function' && pdfParseLib.default) pdfParseLib = pdfP
 
 const app = express();
 
-/*
+
 // Non possiamo usare diskStorage. Usiamo memoryStorage (il file sta in RAM).
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
@@ -230,7 +230,8 @@ router.post('/extract-text', upload.single('file'), async (req, res) => {
     res.status(500).json({ error: 'Errore lettura file' });
   }
 });
-*/
+
+/*
 router.post('/generate-quiz', async (req, res) => {
   const { text, config } = req.body;
 
@@ -291,7 +292,7 @@ router.post('/generate-quiz', async (req, res) => {
     res.status(500).json({ error: "Errore AI: " + error.message });
   }
 });
-
+*/
 // Applichiamo il router alla base path per Netlify
 // Questo gestisce sia chiamate dirette che redirect
 app.use('/', router);
