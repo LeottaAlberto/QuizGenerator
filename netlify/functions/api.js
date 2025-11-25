@@ -22,7 +22,7 @@ const app = express();
 
 app.use(cors());
 
-// IMPORTANTISSIMO: Aumenta il limite per i file Base64!
+// IMPORTANTISSIMO: Aumenta il limite per i file Base64! Aumentato a 50MB per sicurezza.
 app.use(express.json({ limit: '50mb' })); 
 
 // Helper per il parsing JSON (invariato)
@@ -85,7 +85,9 @@ router.post('/extract-text', async (req, res) => {
                 console.log('Tentativo di parsing PDF...');
                 // *** INIZIO MODIFICA PER GESTIONE ERRORI PDF ***
                 try {
-                    const data = await pdfParseLib(fileBuffer);
+                    // Passa un oggetto opzioni vuoto per mantenere la stabilità e la compatibilità
+                    const options = {}; 
+                    const data = await pdfParseLib(fileBuffer, options);
                     extractedText = data.text || ''; // Assicura che sia una stringa vuota in caso di null
                     
                     // Controllo cruciale: se il testo è vuoto nonostante il parsing sia terminato
