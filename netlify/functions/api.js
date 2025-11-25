@@ -23,7 +23,7 @@ const app = express();
 app.use(cors());
 
 // IMPORTANTISSIMO: Aumenta il limite per i file Base64!
-app.use(express.json({ limit: '10mb' })); 
+app.use(express.json({ limit: '50mb' })); 
 
 // Helper per il parsing JSON (invariato)
 function extractJSON(text) {
