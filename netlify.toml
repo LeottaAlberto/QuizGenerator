@@ -2,11 +2,12 @@
   publish = "public"                        # il dir con il tuo frontend statico
   functions = "netlify/functions"
 
-# netlify.toml
 [functions]
+  # external_node_modules = ["express", "pdf-parse", "multer", "mammoth", "node-fetch", "cors", "serverless-http"]
   node_bundler = "esbuild"
-  external_node_modules = ["pdf-parse", "mammoth"] 
-  timeout = 30 
+
+  # Se vuoi includere anche file statici (es: assets, upload) nella funzione (se necessario)
+  # included_files = ["src/**", "uploads/**"]
 
 [[redirects]]
   force = true
