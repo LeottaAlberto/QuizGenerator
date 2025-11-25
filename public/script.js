@@ -187,6 +187,7 @@ if (quizForm) {
                 alertMessage("Errore: " + (data.error || "L'AI non ha generato un JSON valido. Riprova, a volte capita."));
             }
         } catch (err) {
+            // CORREZIONE: Uso della funzione helper alertMessage invece di alert() standard
             alertMessage("Errore comunicazione server.");
         } finally {
             if (generateBtn) generateBtn.disabled = false;
