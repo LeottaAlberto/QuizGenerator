@@ -162,7 +162,7 @@
 // netlify/functions/api.js
 const serverless = require('serverless-http');
 const express = require('express');
-// const multer = require('multer');
+const multer = require('multer');
 const cors = require('cors');
 const fetch = require('node-fetch');
 
@@ -231,7 +231,6 @@ router.post('/extract-text', upload.single('file'), async (req, res) => {
   }
 });
 
-/*
 router.post('/generate-quiz', async (req, res) => {
   const { text, config } = req.body;
 
@@ -292,7 +291,7 @@ router.post('/generate-quiz', async (req, res) => {
     res.status(500).json({ error: "Errore AI: " + error.message });
   }
 });
-*/
+
 // Applichiamo il router alla base path per Netlify
 // Questo gestisce sia chiamate dirette che redirect
 app.use('/', router);
