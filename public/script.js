@@ -68,6 +68,8 @@ fileInput.addEventListener('change', async (e) => {
         });
 
         const data = await response.json();
+
+        console.log(data);
         
         if (data.text) {
             extractedTextContent = data.text;
