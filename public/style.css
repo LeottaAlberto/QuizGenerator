@@ -1,0 +1,42 @@
+/* Anteprima Documento "Paper Style" */
+#previewText {
+    background-color: #ffffff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 30px;
+    max-height: 400px;
+    overflow-y: auto;
+    font-family: 'Georgia', 'Times New Roman', serif; /* Font serif per leggibilità tipo libro */
+    color: #2c3e50;
+    line-height: 1.6;
+    box-shadow: inset 0 0 10px rgba(0,0,0,0.05);
+}
+
+/* Stile per i titoli rilevati automaticamente */
+.doc-title {
+    color: #0d6efd; /* Blu Bootstrap */
+    font-weight: 700;
+    border-bottom: 2px solid #f0f0f0;
+    padding-bottom: 5px;
+    font-family: 'Segoe UI', sans-serif; /* Sans-serif per i titoli */
+}
+
+.doc-text {
+    text-align: justify;
+    font-size: 1.05rem;
+}
+
+/* Scrollbar personalizzata per l'anteprima */
+#previewText::-webkit-scrollbar {
+    width: 8px;
+}
+#previewText::-webkit-scrollbar-track {
+    background: #f1f1f1; 
+}
+#previewText::-webkit-scrollbar-thumb {
+    background: #ccc; 
+    border-radius: 4px;
+}
+#previewText::-webkit-scrollbar-thumb:hover {
+    background: #aaa; 
+}

@@ -1,0 +1,16 @@
+[build]
+  publish = "public"                        # il dir con il tuo frontend statico
+  functions = "netlify/functions"
+
+[functions]
+  external_node_modules = ["express", "pdf-parse", "multer", "mammoth", "node-fetch", "cors", "serverless-http"]
+  node_bundler = "esbuild"
+
+  # Se vuoi includere anche file statici (es: assets, upload) nella funzione (se necessario)
+  # included_files = ["src/**", "uploads/**"]
+
+[[redirects]]
+  force = true
+  from = "/api/*"
+  to = "/.netlify/functions/api/:splat"
+  status = 200
