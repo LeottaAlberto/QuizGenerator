@@ -201,10 +201,18 @@ function extractJSON(text) {
 // Router API
 const router = express.Router();
 
-router.post('/extract-text', upload.single('file'), async (req, res) => {
+router.post('/extract-text', async (req, res) => {
   console.log('Chiamata all\'API: extract-text');
+  console.log('--- Richiesta extract-text ricevuta ---');
+  console.log('Keys nel body della richiesta:', Object.keys(req.body));
+
+  const { file: base64Data, filename, mimetype } = req.body;
   
-  if (!req.file) return res.status(400).json({ error: 'Nessun file caricato' });
+  console.log('Filename ricevuto:', filename);
+  // Logga solo la lunghezza, non la stringa intera che è enorme
+  console.log('Lunghezza Base64:', base64Data ? base64Data.length : 'NULL');
+
+  if (!base64Data) return res.status(400).json({ error: 'Nessun file caricato o file non parsato.' });
   
   // --- MODIFICA: Usiamo il buffer direttamente, non il path ---
   try {
