@@ -172,7 +172,7 @@ if (typeof pdfParseLib !== 'function' && pdfParseLib.default) pdfParseLib = pdfP
 
 const app = express();
 
-// --- MODIFICA FONDAMENTALE PER NETLIFY ---
+/*
 // Non possiamo usare diskStorage. Usiamo memoryStorage (il file sta in RAM).
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
@@ -230,7 +230,7 @@ router.post('/extract-text', upload.single('file'), async (req, res) => {
     res.status(500).json({ error: 'Errore lettura file' });
   }
 });
-
+*/
 router.post('/generate-quiz', async (req, res) => {
   const { text, config } = req.body;
 
@@ -297,5 +297,6 @@ router.post('/generate-quiz', async (req, res) => {
 app.use('/', router);
 app.use('/api', router); 
 app.use('/.netlify/functions/api', router);
+
 
 module.exports.handler = serverless(app);
