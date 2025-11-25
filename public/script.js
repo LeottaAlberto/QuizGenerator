@@ -25,7 +25,6 @@ const loadingSpinner = document.getElementById('loadingSpinner');
 const quizArea = document.getElementById('quizArea');
 const questionsContainer = document.getElementById('questionsContainer');
 const submitQuizBtn = document.getElementById('submitQuizBtn');
-const pre
 // --------------------------------------------------
 
 // Funzione helper per mostrare messaggi (sostituire alert())
