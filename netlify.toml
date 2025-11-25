@@ -4,12 +4,9 @@
 
 # netlify.toml
 [functions]
-  # Usa esbuild per bundling più veloce
-  node_bundler = "esbuild" 
-  # Assicurati che le dipendenze vengano pacchettizzate correttamente
+  node_bundler = "esbuild"
   external_node_modules = ["pdf-parse", "mammoth"] 
-  # Imposta il timeout massimo per dare più tempo al parsing dei PDF complessi
-  timeout = 30
+  timeout = 30 
 
 [[redirects]]
   force = true
