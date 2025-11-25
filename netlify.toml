@@ -3,7 +3,7 @@
   functions = "netlify/functions"
 
 [functions]
-  external_node_modules = ["express", "pdf-parse", "multer", "mammoth", "node-fetch", "cors", "serverless-http"]
+  # external_node_modules = ["express", "pdf-parse", "multer", "mammoth", "node-fetch", "cors", "serverless-http"]
   node_bundler = "esbuild"
 
   # Se vuoi includere anche file statici (es: assets, upload) nella funzione (se necessario)
