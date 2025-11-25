@@ -50,41 +50,72 @@ function formatExtractedText(rawText) {
     return html;
 }
 
+function fileToBase64(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        // Legge il file come Data URL (contiene l'header MIME e i dati Base64)
+        reader.readAsDataURL(file); 
+        reader.onload = () => {
+            // Rimuove l'header "data:application/pdf;base64," per inviare solo i dati Base64
+            const base64String = reader.result.split(',')[1];
+            resolve(base64String);
+        };
+        reader.onerror = error => reject(error);
+    });
+}
+
 // 1. CARICAMENTO FILE
 fileInput.addEventListener('change', async (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
+    // 1. Converti in Base64
+    let base64Data;
+    try {
+        base64Data = await fileToBase64(file);
+    } catch (error) {
+        console.error("Errore lettura file Base64:", error);
+        alertMessage('Errore nella lettura del file.', 'error');
+        return;
+    }
+
     document.getElementById('previewCard').style.display = 'block';
     previewTextDiv.innerHTML = '<div class="text-center p-3 text-muted">Extraction in progress...</div>';
 
-    const formData = new FormData();
-    formData.append('file', file);
-
-    console.log(formData);
-    
     try {
+        // 2. Costruisci il payload JSON (NON FormData)
+        const payload = { 
+            file: base64Data, 
+            filename: file.name,
+            mimetype: file.type 
+        };
+
         const response = await fetch('/api/extract-text', {
             method: 'POST',
-            body: formData
+            // IMPORTANTISSIMO: L'header DEVE essere application/json
+            headers: { 'Content-Type': 'application/json' }, 
+            body: JSON.stringify(payload)
         });
 
-        const data = await response.json();
-
-        console.log(data);
-        
-        if (data.text) {
-            extractedTextContent = data.text;
-            // Applica la formattazione intelligente
-            previewTextDiv.innerHTML = formatExtractedText(data.text);
-            // Riconosci formule matematiche nell'anteprima
-            renderMathInElement(previewTextDiv, katexConfig);
-        } else {
-            previewTextDiv.textContent = "Errore lettura testo.";
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Errore di rete o server');
         }
-    } catch (err) {
-        console.error(err);
-        previewTextDiv.textContent = "Errore server.";
+
+        const data = await response.json();
+        
+        extractedTextContent = data.text;
+        
+        // Aggiorna l'interfaccia con il testo estratto
+        previewTextDiv.textContent = extractedTextContent.substring(0, 1000) + '... (testo completo estratto)';
+        document.getElementById('extractedTextCount').textContent = `${extractedTextContent.length} caratteri`;
+        document.getElementById('configForm').style.display = 'block';
+
+    } catch (error) {
+        console.error('Errore durante l\'estrazione:', error);
+        alertMessage(`Errore estrazione testo: ${error.message}`, 'error');
+        previewTextDiv.textContent = 'Errore durante l\'estrazione del testo.';
+        document.getElementById('configForm').style.display = 'none';
     }
 });
 
