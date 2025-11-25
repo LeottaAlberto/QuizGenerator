@@ -113,7 +113,7 @@ fileInput.addEventListener('change', async (e) => {
 
     } catch (error) {
         console.error('Errore durante l\'estrazione:', error);
-        alertMessage(`Errore estrazione testo: ${error.message}`, 'error');
+        alert(`Errore estrazione testo: ${error.message}`, 'error');
         previewTextDiv.textContent = 'Errore durante l\'estrazione del testo.';
         document.getElementById('configForm').style.display = 'none';
     }
