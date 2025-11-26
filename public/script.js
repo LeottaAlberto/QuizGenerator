@@ -4,7 +4,9 @@ let currentQuizData = [];
 let currentQuizAnswers = [];
 
 // Costanti Globali
-const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
+const MAX_FILE_SIZE_MB = 10;
+const BYTES = 1024;
+const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * BYTES * BYTES;
 
 // Configurazione KaTeX
 const katexConfig = {
@@ -101,7 +103,7 @@ async function checkInputFile(e) {
     if(file.size > MAX_FILE_SIZE_BYTES) {
         // Pulisce l'input e permette di inserire un nuovo file
         e.target.value = '';
-        alertMessage('Il file è troppo grande. Massimo consentito ' + MAX_FILE_SIZE_BYTES + "MB");
+        alertMessage('Il file è troppo grande. Massimo consentito ' + MAX_FILE_SIZE_MB + "MB");
         return;
     }
 
