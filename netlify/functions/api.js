@@ -240,24 +240,25 @@ Se tipo = "open_ended", "risposte" deve essere un array vuoto [] e "corretta" de
 // -----------------------------------------------------------------
 router.post('/extract-mermaid', async (req, res) => {
     try {
-        console.log('--- Chiamata all\'API: extract-mermaid ---');
-
         const { text } = req.body; 
 
-        if (!text) {
-            return res.status(400).json({ error: "Testo mancante nel corpo della richiesta." });
-        }
-
-        // Espressione regolare per trovare blocchi di codice Markdown con linguaggio 'mermaid'
-        // Cerca: ```mermaid ... ```
-        const regex = /```mermaid\s*([\s\S]*?)```/g;
+        // NUOVA REGEX: Cerca le parole chiave di inizio Mermaid (graph, sequenceDiagram, etc.) 
+        // e cattura tutto il contenuto fino a incontrare due a capo consecutivi (\n\n) 
+        // o la fine del testo (\Z).
+        const regex = /(graph|sequenceDiagram|gantt|classDiagram|stateDiagram|pie)\s*([\s\S]*?)(\n\n|\Z)/g;
+        
         let match;
         const mermaidCodeBlocks = [];
 
         // Esegue il loop su tutti i match trovati nel testo
         while ((match = regex.exec(text)) !== null) {
-            // match[1] contiene il contenuto del blocco (il diagramma vero e proprio)
-            mermaidCodeBlocks.push(match[1].trim());
+            // match[0] contiene l'intera corrispondenza (keyword + contenuto)
+            // L'elemento catturato è match[0], puliamo gli spazi/a capo extra.
+            // NOTA: Con questa regex, match[0] è il blocco completo.
+            
+            // Per il tuo codice di esempio, catturiamo il blocco intero match[0] 
+            // e lo puliamo solo per sicurezza
+            mermaidCodeBlocks.push(match[0].trim());
         }
 
         console.log(`Trovati ${mermaidCodeBlocks.length} blocchi Mermaid.`);
