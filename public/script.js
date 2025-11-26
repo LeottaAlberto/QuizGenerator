@@ -110,6 +110,9 @@ async function checkInputFile(e) {
         return;
     }
 
+    const fileName = file.name;
+    const fileExtension = fileName.split('.').pop();    
+
     // 1. Converti in Base64
     let base64Data;
     try {
@@ -119,6 +122,9 @@ async function checkInputFile(e) {
         alertMessage('Errore nella lettura del file.', 'error');
         return;
     }
+
+    console.log('File Base64 created' + fileName);
+    
 
     if (previewCard) previewCard.style.display = 'block';
     if (previewTextDiv) previewTextDiv.innerHTML = '<div class="text-center p-3 text-muted">Extraction in progress...</div>';
@@ -131,11 +137,21 @@ async function checkInputFile(e) {
             mimetype: file.type 
         };
 
-        const response = await fetch('/api/extract-text', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' }, 
-            body: JSON.stringify(payload)
-        });
+        let response;
+
+        if(fileExtension === "pdf") {
+            response = await fetch('/api/extract-text', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }, 
+                body: JSON.stringify(payload)
+            });
+        } else {
+            response = await fetch('/api/extract-mark-down-text', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+        }
 
         if (!response.ok) {
             const errorData = await response.json();
@@ -143,7 +159,6 @@ async function checkInputFile(e) {
         }
 
         const data = await response.json();
-        
         extractedTextContent = data.text ? data.text.trim() : "";
         
         if (!extractedTextContent) {
@@ -341,32 +356,44 @@ if (extractMermaidBtn && mermaidArea) {
             if (data.mermaid && data.mermaid.length > 0) {
                 mermaidArea.innerHTML = ''; // Pulisce l'area
                 
-                // 1. Inizializza Mermaid (importante per l'esecuzione dinamica)
-                // Usiamo startOnLoad: false perché lo stiamo eseguendo noi manualmente
+                // 1. Inizializza Mermaid
                 mermaid.initialize({ startOnLoad: false, theme: 'default' }); 
                 
-                // 2. Loop per renderizzare ogni blocco trovato
-                data.mermaid.forEach(async (mermaidCode, index) => {
+                // 2. *** CORREZIONE: USA for...of per l'attesa sincrona ***
+                for (const [index, mermaidCode] of data.mermaid.entries()) {
+                    
                     const id = `mermaid-chart-${index}`;
                     const container = document.createElement('div');
                     container.className = 'mermaid-output-card shadow-sm p-4 mb-3 bg-white rounded';
-                    container.innerHTML = `<h5 class="text-primary mb-3">Diagramma #${index + 1}</h5><div id="${id}" class="text-center"></div>`;
-                    mermaidArea.appendChild(container);
+                    
+                    // --- CREAZIONE ESPLICITA (CORRETTA) ---
+                    const title = document.createElement('h5');
+                    title.className = 'text-primary mb-3';
+                    title.textContent = `Diagramma #${index + 1}`;
+                    
+                    const renderTarget = document.createElement('div'); // *** QUESTO È IL DIV CHE RICEVE L'SVG ***
+                    renderTarget.id = id;
+                    renderTarget.className = 'text-center'; 
+
+                    container.appendChild(title);
+                    container.appendChild(renderTarget);
+                    
+                    mermaidArea.appendChild(container); // APPENDI AL DOM PRIMA DEL RENDER
 
                     try {
-                        // mermaid.render trasforma la stringa Mermaid in SVG
+                        const a = querySelectorAll('.mermaid-output-card .shadow-sm .p-4 .mb-3 .bg-white .rounded');
+                        console.log(a);
+                        
                         const { svg } = await mermaid.render(id, mermaidCode);
-                        document.getElementById(id).innerHTML = svg;
+                        
+                        // USA L'OGGETTO GIA' CREATO
+                        a.innerHTML = svg; 
+                        
                     } catch (renderError) {
-                        // Gestione errore di sintassi Mermaid
-                        document.getElementById(id).innerHTML = `<div class="alert alert-danger">
-                            ⚠️ Errore nel codice Mermaid. Controlla la sintassi.
-                            <br>Codice: <pre class="p-2 bg-light text-start border rounded">${mermaidCode.substring(0, 300)}...</pre>
-                        </div>`;
-                        console.error("Errore rendering Mermaid:", renderError);
+                        // ...
                     }
-                });
-                alertMessage(`Trovati e renderizzati ${data.mermaid.length} diagrammi Mermaid.`, 'success');
+                }
+                // alertMessage(`Trovati e renderizzati ${data.mermaid.length} diagrammi Mermaid.`, 'success');
 
             } else {
                 mermaidArea.innerHTML = '<div class="text-center p-3 text-warning">Nessun blocco di codice Mermaid trovato nel file (cerca ````mermaid ... ````).</div>';

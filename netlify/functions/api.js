@@ -3,20 +3,13 @@ const express = require('express');
 const cors = require('cors');
 const fetch = require('node-fetch');
 
-// Logging di Inizializzazione Garantito (per debug)
-console.log("--- INIZIALIZZAZIONE FUNZIONE API AVVIATA ---");
-
 // PDF parse
 let pdfParseLib = require('pdf-parse');
 if (typeof pdfParseLib !== 'function' && pdfParseLib.default) pdfParseLib = pdfParseLib.default;
 
-// *** NUOVO LOG DI VERIFICA ***
 if (!pdfParseLib) {
     console.error("ERRORE: La libreria pdf-parse non è stata caricata correttamente.");
-} else {
-    console.log("pdf-parse caricata con successo.");
 }
-// ****************************
 
 const app = express();
 
@@ -71,7 +64,6 @@ router.post('/extract-text', async (req, res) => {
         let fileBuffer;
         try {
             fileBuffer = Buffer.from(base64Data, 'base64');
-            console.log(`Buffer creato con successo, dimensione: ${fileBuffer.length} bytes`); 
         } catch (e) {
             console.error("Errore decodifica Base64:", e.message);
             return res.status(400).json({ error: "Impossibile decodificare il file Base64." });
@@ -96,8 +88,6 @@ router.post('/extract-text', async (req, res) => {
                         // Lanciamo un errore che verrà catturato dal blocco esterno
                         throw new Error("Il parser PDF ha restituito testo vuoto. Il file potrebbe essere una scansione o non contenere testo standard (solo formule/immagini).");
                     }
-
-                    console.log(`Parsing PDF completato. Lunghezza estratta: ${extractedText.length}`);
                 } catch (pdfError) {
                     // Gestisce gli errori interni di pdf-parse (es. file corrotto, password protetta)
                     console.error("ERRORE CRITICO durante il parsing PDF:", pdfError.message);
@@ -107,10 +97,8 @@ router.post('/extract-text', async (req, res) => {
                 // *** FINE MODIFICA ***
             } else if (mimetype.includes('word') || mimetype.includes('officedocument')) {
                 const mammoth = require('mammoth');
-                console.log('Tentativo di parsing DOCX...');
                 const result = await mammoth.extractRawText({ buffer: fileBuffer });
                 extractedText = result.value;
-                console.log('Parsing DOCX completato.');
             } else {
                 // File di testo semplice
                 extractedText = fileBuffer.toString('utf8');
@@ -245,20 +233,19 @@ router.post('/extract-mermaid', async (req, res) => {
         // NUOVA REGEX: Cerca le parole chiave di inizio Mermaid (graph, sequenceDiagram, etc.) 
         // e cattura tutto il contenuto fino a incontrare due a capo consecutivi (\n\n) 
         // o la fine del testo (\Z).
-        const regex = /(graph|sequenceDiagram|gantt|classDiagram|stateDiagram|pie)\s*([\s\S]*?)(\n\n|\Z)/g;
+        // const regex = /(graph|sequenceDiagram|gantt|classDiagram|stateDiagram|pie)\s*([\s\S]*?)(\n\n|\Z)/g;
         
+        const mermaidRegex = /```mermaid\s*([\s\S]*?)```/g;
         let match;
         const mermaidCodeBlocks = [];
 
-        // Esegue il loop su tutti i match trovati nel testo
-        while ((match = regex.exec(text)) !== null) {
-            // match[0] contiene l'intera corrispondenza (keyword + contenuto)
-            // L'elemento catturato è match[0], puliamo gli spazi/a capo extra.
-            // NOTA: Con questa regex, match[0] è il blocco completo.
+        while ((match = mermaidRegex.exec(text)) !== null) {
+            // ERRORE ERA QUI: Probabilmente stavi usando match[0]
+            // match[0] contiene tutto: ```mermaid graph TD... ``` (SBAGLIATO per il render)
             
-            // Per il tuo codice di esempio, catturiamo il blocco intero match[0] 
-            // e lo puliamo solo per sicurezza
-            mermaidCodeBlocks.push(match[0].trim());
+            // CORREZIONE: Usa match[1]
+            // match[1] contiene SOLO ciò che c'è tra le parentesi della regex: graph TD... (CORRETTO)
+            mermaidCodeBlocks.push(match[1].trim()); 
         }
 
         console.log(`Trovati ${mermaidCodeBlocks.length} blocchi Mermaid.`);
@@ -269,6 +256,58 @@ router.post('/extract-mermaid', async (req, res) => {
     } catch (error) {
         console.error("Errore estrazione Mermaid:", error.message);
         res.status(500).json({ error: 'Errore interno durante l\'estrazione di Mermaid.' });
+    }
+});
+
+// -----------------------------------------------------------------
+// ROUTE 4: ESTRAZIONE CONTENUTO MARKDOWN (Testo + Mermaid)
+// -----------------------------------------------------------------
+router.post('/extract-mark-down-text', async (req, res) => {
+        
+    try {
+        // Il frontend DEVE inviare { file: base64String, filename: string, mimetype: string }
+        const { file: base64Data, filename } = req.body; 
+
+        if (!base64Data) {
+            console.error("Richiesta extract-mark-down-text non valida: dati Base64 mancanti.");
+            return res.status(400).json({ error: "Richiesta non valida: dati file Base64 mancanti." });
+        }
+        
+        // 1. Decodifica Base64 in Buffer
+        let fileBuffer;
+        try {
+            fileBuffer = Buffer.from(base64Data, 'base64');
+            console.log(`Buffer MD creato con successo, dimensione: ${fileBuffer.length} bytes`); 
+        } catch (e) {
+            console.error("Errore decodifica Base64:", e.message);
+            return res.status(400).json({ error: "Impossibile decodificare il file Base64." });
+        }
+        
+        // 2. Converti il Buffer in stringa di testo
+        let extractedText = fileBuffer.toString('utf8');
+        extractedText = extractedText.replace(/\r\n/g, '\n'); // Normalizza a capo
+
+        // 3. Estrazione Codice Mermaid (Opzionale ma utile)
+        const mermaidRegex = /```mermaid\s*([\s\S]*?)```/g;
+        let match;
+        const mermaidCodeBlocks = [];
+
+        while ((match = mermaidRegex.exec(extractedText)) !== null) {
+            mermaidCodeBlocks.push(match[1].trim());
+        }
+        
+        console.log(`Estrazione MD completata. Caratteri: ${extractedText.length}. Diagrammi Mermaid trovati: ${mermaidCodeBlocks.length}`);
+
+        // 4. Restituisce il testo completo e l'array di blocchi Mermaid
+        // Limitiamo il testo per l'AI, come fai in /extract-text
+        res.json({ 
+            text: extractedText, 
+            mermaid: mermaidCodeBlocks 
+        });
+
+    } catch (error) {
+        console.error("Errore FATALE in /extract-mark-down-content:", error.message);
+        res.status(500).json({ error: 'Errore interno del server durante la lettura del file Markdown: ' + error.message });
     }
 });
 

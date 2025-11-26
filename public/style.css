@@ -40,3 +40,21 @@
 #previewText::-webkit-scrollbar-thumb:hover {
     background: #aaa; 
 }
+
+#mermaidArea div {
+    overflow: auto;
+}
+#mermaidArea svg {
+    /* 1. Assicura che l'SVG non abbia dimensioni zero */
+    width: 100%;
+    min-height: 250px; 
+    height: auto; 
+    
+    /* 2. Aggiungi un bordo per vedere DOVE si trova l'SVG */
+    border: 2px solid #007bff; /* Bordo blu per il debug */
+}
+
+/* Assicura che il contenitore principale non nasconda l'SVG */
+.mermaid-output-card {
+    overflow: visible; /* O auto, se non vuoi che l'SVG sia tagliato */
+}
