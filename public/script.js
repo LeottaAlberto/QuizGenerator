@@ -31,6 +31,9 @@ const loadingSpinner = document.getElementById('loadingSpinner');
 const quizArea = document.getElementById('quizArea');
 const questionsContainer = document.getElementById('questionsContainer');
 const submitQuizBtn = document.getElementById('submitQuizBtn');
+
+const mermaidArea = document.getElementById('mermaidArea'); 
+const extractMermaidBtn = document.getElementById('extractMermaidBtn');
 // --------------------------------------------------
 
 // Funzione helper per mostrare messaggi (sostituire alert())
@@ -311,6 +314,67 @@ if (submitQuizBtn) {
         // Re-render math nelle soluzioni appena svelate
         if (questionsContainer && typeof renderMathInElement !== 'undefined') {
             renderMathInElement(questionsContainer, katexConfig);
+        }
+    });
+}
+
+// --- NUOVA LOGICA: ESTRAZIONE E RENDER MERMAID ---
+if (extractMermaidBtn && mermaidArea) {
+    extractMermaidBtn.addEventListener('click', async () => {
+        if (!extractedTextContent) {
+            alertMessage("Carica prima un file e attendi l'estrazione del testo!", 'info');
+            return;
+        }
+
+        mermaidArea.innerHTML = '<div class="text-center p-3 text-muted">Ricerca e renderizzazione Mermaid in corso...</div>';
+
+        try {
+            // Chiama la nuova API /extract-mermaid con il testo completo
+            const response = await fetch('/api/extract-mermaid', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text: extractedTextContent })
+            });
+
+            const data = await response.json();
+
+            if (data.mermaid && data.mermaid.length > 0) {
+                mermaidArea.innerHTML = ''; // Pulisce l'area
+                
+                // 1. Inizializza Mermaid (importante per l'esecuzione dinamica)
+                // Usiamo startOnLoad: false perché lo stiamo eseguendo noi manualmente
+                mermaid.initialize({ startOnLoad: false, theme: 'default' }); 
+                
+                // 2. Loop per renderizzare ogni blocco trovato
+                data.mermaid.forEach(async (mermaidCode, index) => {
+                    const id = `mermaid-chart-${index}`;
+                    const container = document.createElement('div');
+                    container.className = 'mermaid-output-card shadow-sm p-4 mb-3 bg-white rounded';
+                    container.innerHTML = `<h5 class="text-primary mb-3">Diagramma #${index + 1}</h5><div id="${id}" class="text-center"></div>`;
+                    mermaidArea.appendChild(container);
+
+                    try {
+                        // mermaid.render trasforma la stringa Mermaid in SVG
+                        const { svg } = await mermaid.render(id, mermaidCode);
+                        document.getElementById(id).innerHTML = svg;
+                    } catch (renderError) {
+                        // Gestione errore di sintassi Mermaid
+                        document.getElementById(id).innerHTML = `<div class="alert alert-danger">
+                            ⚠️ Errore nel codice Mermaid. Controlla la sintassi.
+                            <br>Codice: <pre class="p-2 bg-light text-start border rounded">${mermaidCode.substring(0, 300)}...</pre>
+                        </div>`;
+                        console.error("Errore rendering Mermaid:", renderError);
+                    }
+                });
+                alertMessage(`Trovati e renderizzati ${data.mermaid.length} diagrammi Mermaid.`, 'success');
+
+            } else {
+                mermaidArea.innerHTML = '<div class="text-center p-3 text-warning">Nessun blocco di codice Mermaid trovato nel file (cerca ````mermaid ... ````).</div>';
+            }
+
+        } catch (error) {
+            alertMessage(`Errore di comunicazione per l'estrazione Mermaid: ${error.message}`, 'error');
+            mermaidArea.innerHTML = '<div class="text-center p-3 text-danger">Errore durante la comunicazione con il server.</div>';
         }
     });
 }

@@ -107,6 +107,15 @@
                     </div>
                 </div>
 
+                <div class="card p-3 my-4">
+                    <button id="extractMermaidBtn" class="btn btn-secondary">
+                        Estrarre e Visualizzare Diagrammi Mermaid
+                    </button>
+                </div>
+
+                <div id="mermaidArea" class="mt-4">
+                </div>
+
                 <div id="quizArea" class="d-none">
                     <div class="d-flex justify-content-between align-items-center mb-4">
                         <h3 class="fw-bold text-primary m-0">Il Tuo Quiz</h3>
@@ -120,6 +129,7 @@
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>

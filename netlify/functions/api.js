@@ -235,6 +235,41 @@ Se tipo = "open_ended", "risposte" deve essere un array vuoto [] e "corretta" de
     }
 });
 
+// -----------------------------------------------------------------
+// ROUTE 3: ESTRAZIONE E RITORNO CODICE MERMAID
+// -----------------------------------------------------------------
+router.post('/extract-mermaid', async (req, res) => {
+    try {
+        console.log('--- Chiamata all\'API: extract-mermaid ---');
+
+        const { text } = req.body; 
+
+        if (!text) {
+            return res.status(400).json({ error: "Testo mancante nel corpo della richiesta." });
+        }
+
+        // Espressione regolare per trovare blocchi di codice Markdown con linguaggio 'mermaid'
+        // Cerca: ```mermaid ... ```
+        const regex = /```mermaid\s*([\s\S]*?)```/g;
+        let match;
+        const mermaidCodeBlocks = [];
+
+        // Esegue il loop su tutti i match trovati nel testo
+        while ((match = regex.exec(text)) !== null) {
+            // match[1] contiene il contenuto del blocco (il diagramma vero e proprio)
+            mermaidCodeBlocks.push(match[1].trim());
+        }
+
+        console.log(`Trovati ${mermaidCodeBlocks.length} blocchi Mermaid.`);
+
+        // Restituisce un array di stringhe, dove ogni stringa è un blocco Mermaid puro
+        res.json({ mermaid: mermaidCodeBlocks });
+        
+    } catch (error) {
+        console.error("Errore estrazione Mermaid:", error.message);
+        res.status(500).json({ error: 'Errore interno durante l\'estrazione di Mermaid.' });
+    }
+});
 
 // Applichiamo il router alla base path per Netlify
 app.use('/', router);
