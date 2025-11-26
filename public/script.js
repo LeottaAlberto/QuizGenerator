@@ -3,6 +3,9 @@ let extractedTextContent = "";
 let currentQuizData = [];
 let currentQuizAnswers = [];
 
+// Costanti Globali
+const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
+
 // Configurazione KaTeX
 const katexConfig = {
     delimiters: [
@@ -83,88 +86,98 @@ function fileToBase64(file) {
 }
 
 // 1. CARICAMENTO FILE
-if (fileInput) {
-    fileInput.addEventListener('change', async (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
+document.addEventListener('DOMContentLoaded', () => {
+    if(fileInput) 
+        fileInput.addEventListener('change', async (e) => checkInputFile(e));
+    else
+        console.error("L'elemento fileInput non è stato trovato. Assicurati che l'ID sia 'fileInput'.");
+});
 
-        // 1. Converti in Base64
-        let base64Data;
-        try {
-            base64Data = await fileToBase64(file);
-        } catch (error) {
-            console.error("Errore lettura file Base64:", error);
-            alertMessage('Errore nella lettura del file.', 'error');
-            return;
+async function checkInputFile(e) {
+    const file = e.target.files[0];
+
+    if (!file) return;
+
+    if(file.size > MAX_FILE_SIZE_BYTES) {
+        // Pulisce l'input e permette di inserire un nuovo file
+        e.target.value = '';
+        alertMessage('Il file è troppo grande. Massimo consentito ' + MAX_FILE_SIZE_BYTES + "MB");
+        return;
+    }
+
+    // 1. Converti in Base64
+    let base64Data;
+    try {
+        base64Data = await fileToBase64(file);
+    } catch (error) {
+        console.error("Errore lettura file Base64:", error);
+        alertMessage('Errore nella lettura del file.', 'error');
+        return;
+    }
+
+    if (previewCard) previewCard.style.display = 'block';
+    if (previewTextDiv) previewTextDiv.innerHTML = '<div class="text-center p-3 text-muted">Extraction in progress...</div>';
+
+    try {
+        // 2. Costruisci il payload JSON (NON FormData)
+        const payload = { 
+            file: base64Data, 
+            filename: file.name,
+            mimetype: file.type 
+        };
+
+        const response = await fetch('/api/extract-text', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }, 
+            body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Errore di rete o server');
         }
 
-        if (previewCard) previewCard.style.display = 'block';
-        if (previewTextDiv) previewTextDiv.innerHTML = '<div class="text-center p-3 text-muted">Extraction in progress...</div>';
-
-        try {
-            // 2. Costruisci il payload JSON (NON FormData)
-            const payload = { 
-                file: base64Data, 
-                filename: file.name,
-                mimetype: file.type 
-            };
-
-            const response = await fetch('/api/extract-text', {
-                method: 'POST',
-                // IMPORTANTISSIMO: L'header DEVE essere application/json
-                headers: { 'Content-Type': 'application/json' }, 
-                body: JSON.stringify(payload)
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'Errore di rete o server');
-            }
-
-            const data = await response.json();
-            
-            extractedTextContent = data.text ? data.text.trim() : "";
-            
-            if (!extractedTextContent) {
-                 // Errore specifico se il testo è vuoto (probabilmente PDF non contenente testo leggibile)
-                throw new Error("Il file non contiene testo estraibile o il testo è vuoto. Prova un altro PDF.");
-            }
-
-            // Aggiorna l'interfaccia con il testo estratto
-            if (previewTextDiv) {
-                const formattedHtml = formatExtractedText(extractedTextContent.substring(0, 2000));
-                
-                if (formattedHtml.trim()) {
-                    // Visualizzazione Formattata
-                    previewTextDiv.innerHTML = formattedHtml + '... (Testo completo estratto nel backend)';
-                } else {
-                    // Fallback se la formattazione non produce output visibile
-                    previewTextDiv.innerHTML = `
-                        <p class="text-warning fw-bold">Attenzione: La formattazione automatica del testo è fallita.</p>
-                        <p class="text-muted">Mostriamo i primi 500 caratteri grezzi per diagnostica:</p>
-                        <pre class="doc-text bg-light p-2 rounded">${extractedTextContent.substring(0, 500)}...</pre>
-                    `;
-                }
-            }
-            
-            // Usiamo l'elemento DOM selezionato all'inizio
-            if (extractedTextCountElement) {
-                extractedTextCountElement.textContent = `${extractedTextContent.length} caratteri`;
-            }
-            
-            if (configForm) configForm.style.display = 'block';
-
-            //alertMessage('Testo estratto con successo!', 'success'); // Messaggio di successo
-
-        } catch (error) {
-            console.error('Errore durante l\'estrazione:', error);
-            alertMessage(`Errore estrazione testo: ${error.message}`, 'error');
-            if (previewTextDiv) previewTextDiv.textContent = 'Errore durante l\'estrazione del testo.';
-            if (configForm) configForm.style.display = 'none';
+        const data = await response.json();
+        
+        extractedTextContent = data.text ? data.text.trim() : "";
+        
+        if (!extractedTextContent) {
+            // Errore specifico se il testo è vuoto (probabilmente PDF non contenente testo leggibile)
+            throw new Error("Il file non contiene testo estraibile o il testo è vuoto. Prova un altro PDF.");
         }
-    });
-} else {
-    console.error("L'elemento fileInput non è stato trovato. Assicurati che l'ID sia 'fileInput'.");
+
+        // Aggiorna l'interfaccia con il testo estratto
+        if (previewTextDiv) {
+            const formattedHtml = formatExtractedText(extractedTextContent);
+            
+            if (formattedHtml.trim()) {
+                // Visualizzazione Formattata
+                previewTextDiv.innerHTML = formattedHtml + '... (Testo completo estratto nel backend)';
+            } else {
+                // Fallback se la formattazione non produce output visibile
+                previewTextDiv.innerHTML = `
+                    <p class="text-warning fw-bold">Attenzione: La formattazione automatica del testo è fallita.</p>
+                    <p class="text-muted">Mostriamo i primi 500 caratteri grezzi per diagnostica:</p>
+                    <pre class="doc-text bg-light p-2 rounded">${extractedTextContent.substring(0, 500)}...</pre>
+                `;
+            }
+        }
+        
+        // Usiamo l'elemento DOM selezionato all'inizio
+        if (extractedTextCountElement) {
+            extractedTextCountElement.textContent = `${extractedTextContent.length} caratteri`;
+        }
+        
+        if (configForm) configForm.style.display = 'block';
+
+        //alertMessage('Testo estratto con successo!', 'success'); // Messaggio di successo
+
+    } catch (error) {
+        console.error('Errore durante l\'estrazione:', error);
+        alertMessage(`Errore estrazione testo: ${error.message}`, 'error');
+        if (previewTextDiv) previewTextDiv.textContent = 'Errore durante l\'estrazione del testo.';
+        if (configForm) configForm.style.display = 'none';
+    }
 }
 
 
