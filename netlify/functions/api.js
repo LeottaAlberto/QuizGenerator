@@ -184,9 +184,7 @@ Devi restituire SOLO un oggetto JSON valido:
       "domanda": "Testo domanda...",
       "risposte": ["A", "B", ...],
       "corretta": "A",
-      // <--- CAMPO AGGIUNTO
       "spiegazione": "La risposta è corretta perché il testo specifica che '...'."
-      // <---
     }
   ]
 }

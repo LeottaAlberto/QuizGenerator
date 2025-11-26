@@ -153,7 +153,7 @@ if (fileInput) {
             
             if (configForm) configForm.style.display = 'block';
 
-            alertMessage('Testo estratto con successo!', 'success'); // Messaggio di successo
+            //alertMessage('Testo estratto con successo!', 'success'); // Messaggio di successo
 
         } catch (error) {
             console.error('Errore durante l\'estrazione:', error);
@@ -201,7 +201,7 @@ if (quizForm) {
                 // Salva il quiz completo per un potenziale uso futuro se necessario
                 currentQuizData = data.quiz; 
                 renderQuiz(data.quiz, config.questionType);
-                alertMessage('Quiz generato con successo!', 'success');
+                //alertMessage('Quiz generato con successo!', 'success');
             } else {
                 // Gestione errore specifica
                 alertMessage("Errore: " + (data.error || "L'AI non ha generato un JSON valido. Riprova, a volte capita."), 'error');
