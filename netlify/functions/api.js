@@ -125,15 +125,15 @@ router.post('/extract-text', async (req, res) => {
             res.status(500).json({ error: 'Errore durante la lettura o il parsing del file: ' + error.message });
         }
     } catch (generalError) {
-         // CATTURA GLI ERRORI CHE HANNO SUPERATO I BLOCCHI INTERNI (es. Time-out o Errori di ambiente)
-         console.error("Errore FATALE non gestito nell'endpoint /extract-text:", generalError.message);
-         // Assicuriamo una risposta JSON valida anche per errori catastrofici
-         res.status(500).json({ error: "Errore interno del server non gestito. Probabile timeout o esaurimento della memoria." });
+           // CATTURA GLI ERRORI CHE HANNO SUPERATO I BLOCCHI INTERNI (es. Time-out o Errori di ambiente)
+           console.error("Errore FATALE non gestito nell'endpoint /extract-text:", generalError.message);
+           // Assicuriamo una risposta JSON valida anche per errori catastrofici
+           res.status(500).json({ error: "Errore interno del server non gestito. Probabile timeout o esaurimento della memoria." });
     }
 });
 
 // -----------------------------------------------------------------
-// ROUTE 2: GENERAZIONE QUIZ (Chiama Gemini)
+// ROUTE 2: GENERAZIONE QUIZ (Chiama Gemini) - MODIFICATA
 // -----------------------------------------------------------------
 router.post('/generate-quiz', async (req, res) => {
     // ⚠️ Controllo per il crash 'Cannot read properties of undefined' (Punto 1.B)
@@ -165,6 +165,11 @@ PARAMETRI:
 - Tipo: ${configParams.questionType}
 - Opzioni (se multipla): ${configParams.numOptions}
 
+ISTRUZIONI CRUCIALI PER LA GIUSTIFICAZIONE:
+- Per ogni domanda, devi fornire una **spiegazione dettagliata (giustificazione)** della risposta corretta.
+- La spiegazione **DEVE** essere basata *esclusivamente* sul contenuto del TESTO fornito. Idealmente, cita la frase o il concetto chiave dal testo.
+- Inserisci la spiegazione nel nuovo campo **"spiegazione"** per ogni oggetto domanda.
+
 ISTRUZIONI LATEX:
 - Se incontri formule matematiche, DEVI scriverle in formato KaTeX/LaTeX.
 - Usa il delimitatore singolo '$' per le formule inline (es: $E=mc^2$).
@@ -178,11 +183,14 @@ Devi restituire SOLO un oggetto JSON valido:
     {
       "domanda": "Testo domanda...",
       "risposte": ["A", "B", ...],
-      "corretta": "A"
+      "corretta": "A",
+      // <--- CAMPO AGGIUNTO
+      "spiegazione": "La risposta è corretta perché il testo specifica che '...'."
+      // <---
     }
   ]
 }
-Se tipo = "open_ended", "risposte" deve essere un array vuoto [].
+Se tipo = "open_ended", "risposte" deve essere un array vuoto [] e "corretta" deve essere una stringa vuota "" (o una risposta modello).
 `;
 
     try {

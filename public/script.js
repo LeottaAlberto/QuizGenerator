@@ -54,7 +54,7 @@ function formatExtractedText(rawText) {
         // Euristica per i Titoli: Corti (< 80 char) e non finiscono con punteggiatura classica (.,;)
         // Oppure sono tutti in maiuscolo
         const isTitle = (cleanPara.length < 80 && !/[.,;]$/.test(cleanPara)) || 
-                        (cleanPara === cleanPara.toUpperCase() && cleanPara.length < 100);
+                         (cleanPara === cleanPara.toUpperCase() && cleanPara.length < 100);
 
         if (isTitle) {
             // Titolo: Font più grande
@@ -198,6 +198,8 @@ if (quizForm) {
             const data = await response.json();
 
             if (data.quiz) {
+                // Salva il quiz completo per un potenziale uso futuro se necessario
+                currentQuizData = data.quiz; 
                 renderQuiz(data.quiz, config.questionType);
                 alertMessage('Quiz generato con successo!', 'success');
             } else {
@@ -217,6 +219,7 @@ if (quizForm) {
 // Funzioni Helper Quiz
 function shuffleArray(arr) { return arr.sort(() => Math.random() - 0.5); }
 
+// *** FUNZIONE renderQuiz MODIFICATA ***
 function renderQuiz(quiz, type) {
     if (quizArea) quizArea.classList.remove('d-none');
     
@@ -230,10 +233,19 @@ function renderQuiz(quiz, type) {
         title.textContent = `${idx+1}. ${q.domanda}`;
         card.appendChild(title);
 
-        // Soluzione (Nascosta)
+        // Soluzione (Nascosta) - AGGIORNATA
         const solDiv = document.createElement('div');
         solDiv.className = 'solution-box alert alert-info mt-3 d-none';
-        solDiv.innerHTML = `<strong>Risposta:</strong> ${q.corretta}`;
+        
+        let solutionHtml = `<strong>Risposta Corretta:</strong> ${q.corretta}`;
+
+        // Aggiungi la spiegazione se presente
+        if (q.spiegazione) {
+            solutionHtml += `<hr class="my-2"><strong>Spiegazione (dal testo):</strong> ${q.spiegazione}`;
+        }
+        
+        solDiv.innerHTML = solutionHtml;
+        // FINE AGGIORNAMENTO
 
         if (type === 'multiple_choice' && q.risposte.length > 0) {
             const opts = q.risposte.map(r => ({ txt: r, correct: r === q.corretta }));
@@ -255,6 +267,8 @@ function renderQuiz(quiz, type) {
     });
 
     // Render Math
+    // NOTA: Se 'renderMathInElement' non è definito, questa linea fallirà. 
+    // Assicurati che la libreria KaTeX sia inclusa nel tuo HTML.
     if (questionsContainer && typeof renderMathInElement !== 'undefined') {
         renderMathInElement(questionsContainer, katexConfig);
     }
