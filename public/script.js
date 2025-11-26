@@ -236,7 +236,7 @@ function renderQuiz(quiz, type) {
         solDiv.className = 'solution-box alert alert-info mt-3 d-none';
         solDiv.innerHTML = `<strong>Risposta:</strong> ${q.corretta}`;
 
-        currentQuizAnswers.push({questionsContainer,solDiv});
+        currentQuizAnswers.push({card,solDiv});
 
         if (type === 'multiple_choice' && q.risposte.length > 0) {
             const opts = q.risposte.map(r => ({ txt: r, correct: r === q.corretta }));
@@ -268,7 +268,7 @@ if (submitQuizBtn) {
     submitQuizBtn.addEventListener('click', (e) => {
         
         currentQuizAnswers.forEach((element) => {
-            element.questionsContainer.appendChild(element.solDiv)
+            element.card.appendChild(element.solDiv)
         })
 
         document.querySelectorAll('.solution-box').forEach(el => el.classList.remove('d-none'));
