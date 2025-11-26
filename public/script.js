@@ -1,6 +1,7 @@
 // Variabili globali
 let extractedTextContent = "";
 let currentQuizData = [];
+let currentQuizAnswers = [];
 
 // Configurazione KaTeX
 const katexConfig = {
@@ -235,6 +236,8 @@ function renderQuiz(quiz, type) {
         solDiv.className = 'solution-box alert alert-info mt-3 d-none';
         solDiv.innerHTML = `<strong>Risposta:</strong> ${q.corretta}`;
 
+        currentQuizAnswers.push({questionsContainer,solDiv});
+
         if (type === 'multiple_choice' && q.risposte.length > 0) {
             const opts = q.risposte.map(r => ({ txt: r, correct: r === q.corretta }));
             shuffleArray(opts).forEach((opt, i) => {
@@ -250,7 +253,7 @@ function renderQuiz(quiz, type) {
             card.innerHTML += `<textarea class="form-control" rows="2" placeholder="Rispondi qui..."></textarea>`;
         }
 
-        card.appendChild(solDiv);
+        // card.appendChild(solDiv);
         if (questionsContainer) questionsContainer.appendChild(card);
     });
 
@@ -263,6 +266,11 @@ function renderQuiz(quiz, type) {
 
 if (submitQuizBtn) {
     submitQuizBtn.addEventListener('click', (e) => {
+        
+        currentQuizAnswers.forEach((element) => {
+            element.questionsContainer.appendChild(element.solDiv)
+        })
+
         document.querySelectorAll('.solution-box').forEach(el => el.classList.remove('d-none'));
         document.querySelectorAll('input[type="radio"]').forEach(inp => {
             inp.disabled = true;
