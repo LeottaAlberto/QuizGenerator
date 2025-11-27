@@ -344,7 +344,6 @@ if (extractMermaidBtn && mermaidArea) {
         mermaidArea.innerHTML = '<div class="text-center p-3 text-muted">Ricerca e renderizzazione Mermaid in corso...</div>';
 
         try {
-            // Chiama la nuova API /extract-mermaid con il testo completo
             const response = await fetch('/api/extract-mermaid', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -355,51 +354,34 @@ if (extractMermaidBtn && mermaidArea) {
 
             if (data.mermaid && data.mermaid.length > 0) {
                 mermaidArea.innerHTML = ''; // Pulisce l'area
-                
-                // 1. Inizializza Mermaid
                 mermaid.initialize({ startOnLoad: false, theme: 'default' }); 
                 
-                // 2. *** CORREZIONE: USA for...of per l'attesa sincrona ***
                 for (const [index, mermaidCode] of data.mermaid.entries()) {
                     
                     const id = `mermaid-chart-${index}`;
                     const container = document.createElement('div');
                     container.className = 'mermaid-output-card shadow-sm p-4 mb-3 bg-white rounded';
                     
-                    // --- CREAZIONE ESPLICITA (CORRETTA) ---
                     const title = document.createElement('h5');
                     title.className = 'text-primary mb-3';
                     title.textContent = `Diagramma #${index + 1}`;
-                    
-                    const renderTarget = document.createElement('div'); // *** QUESTO È IL DIV CHE RICEVE L'SVG ***
-                    renderTarget.id = id;
-                    renderTarget.className = 'text-center'; 
 
                     container.appendChild(title);
-                    container.appendChild(renderTarget);
-                    
-                    mermaidArea.appendChild(container); // APPENDI AL DOM PRIMA DEL RENDER
 
+                    mermaidArea.appendChild(container); 
                     try {
-                        const a = querySelectorAll('.mermaid-output-card .shadow-sm .p-4 .mb-3 .bg-white .rounded');
-                        console.log(a);
-                        
                         const { svg } = await mermaid.render(id, mermaidCode);
-                        
-                        // USA L'OGGETTO GIA' CREATO
-                        a.innerHTML = svg; 
-                        
+                        container.innerHTML += svg;
                     } catch (renderError) {
-                        // ...
+                        console.error(renderError);
                     }
                 }
-                // alertMessage(`Trovati e renderizzati ${data.mermaid.length} diagrammi Mermaid.`, 'success');
-
             } else {
                 mermaidArea.innerHTML = '<div class="text-center p-3 text-warning">Nessun blocco di codice Mermaid trovato nel file (cerca ````mermaid ... ````).</div>';
             }
 
         } catch (error) {
+            console.erro("asdasasd");
             alertMessage(`Errore di comunicazione per l'estrazione Mermaid: ${error.message}`, 'error');
             mermaidArea.innerHTML = '<div class="text-center p-3 text-danger">Errore durante la comunicazione con il server.</div>';
         }
