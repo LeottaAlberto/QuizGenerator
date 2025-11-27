@@ -227,6 +227,8 @@ if (quizForm) {
       return;
     }
 
+    submitQuizBtn.disabled = false;
+
     if (generateBtn) generateBtn.disabled = true;
     if (loadingSpinner) loadingSpinner.classList.remove("d-none");
     if (quizArea) quizArea.classList.add("d-none");
@@ -258,12 +260,16 @@ if (quizForm) {
         //alertMessage('Quiz generato con successo!', 'success');
       } else {
         // Gestione errore specifica
+        quizForm.click();
         alertMessage(
           "Errore: " +
             (data.error ||
               "L'AI non ha generato un JSON valido. Riprova, a volte capita."),
           "error"
         );
+        const parag = loadingSpinner.querySelector("p");
+        parag.innerText =
+          "Attendi ancora qualche secondo. Ci vuole un po' piu' del previsto";
       }
     } catch (err) {
       alertMessage("Errore comunicazione server.", "error");
