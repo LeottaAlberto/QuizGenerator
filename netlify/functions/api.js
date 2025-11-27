@@ -176,7 +176,7 @@ router.post("/generate-quiz", async (req, res) => {
   };
 
   const systemPrompt = `
-Sei un'API che risponde SOLO JSON. Non scrivere altro testo.
+Sei un'API che risponde SOLO ed esclusivamente in JSON, non in altri formati. Non scrivere altro testo.
 Analizza il testo fornito ${
     configParams.topic !== "nella sua interezza"
       ? "concentrandoti su: " + configParams.topic
