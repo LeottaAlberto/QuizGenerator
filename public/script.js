@@ -2,6 +2,8 @@
 let extractedTextContent = "";
 let currentQuizData = [];
 let currentQuizAnswers = [];
+// NUOVA VARIABILE: Storico delle domande per il file corrente
+let questionHistory = [];
 
 // Costanti Globali
 const MAX_FILE_SIZE_MB = 10;
@@ -180,6 +182,10 @@ async function checkInputFile(e) {
       );
     }
 
+    // NUOVA LOGICA: Reset dello storico domande perché è stato caricato un nuovo file
+    questionHistory = [];
+    console.log("Nuovo file caricato. Storico domande resettato.");
+
     // Aggiorna l'interfaccia con il testo estratto
     if (previewTextDiv) {
       const formattedHtml = formatExtractedText(extractedTextContent);
@@ -191,13 +197,13 @@ async function checkInputFile(e) {
       } else {
         // Fallback se la formattazione non produce output visibile
         previewTextDiv.innerHTML = `
-                    <p class="text-warning fw-bold">Attenzione: La formattazione automatica del testo è fallita.</p>
-                    <p class="text-muted">Mostriamo i primi 500 caratteri grezzi per diagnostica:</p>
-                    <pre class="doc-text bg-light p-2 rounded">${extractedTextContent.substring(
-                      0,
-                      500
-                    )}...</pre>
-                `;
+                        <p class="text-warning fw-bold">Attenzione: La formattazione automatica del testo è fallita.</p>
+                        <p class="text-muted">Mostriamo i primi 500 caratteri grezzi per diagnostica:</p>
+                        <pre class="doc-text bg-light p-2 rounded">${extractedTextContent.substring(
+                          0,
+                          500
+                        )}...</pre>
+                    `;
       }
     }
 
@@ -245,10 +251,15 @@ if (quizForm) {
     };
 
     try {
+      // MODIFICA: Includi lo storico delle domande nel payload
       const response = await fetch("/api/generate-quiz", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: extractedTextContent, config }),
+        body: JSON.stringify({
+          text: extractedTextContent,
+          config: config,
+          previousQuestions: questionHistory, // Passa lo storico attuale
+        }),
       });
 
       const data = await response.json();
@@ -256,6 +267,20 @@ if (quizForm) {
       if (data.quiz) {
         // Salva il quiz completo per un potenziale uso futuro se necessario
         currentQuizData = data.quiz;
+
+        // NUOVA LOGICA: Aggiorna lo storico domande
+        data.quiz.forEach((q) => {
+          // Aggiungi solo il testo della domanda per risparmiare token
+          questionHistory.push(q.domanda);
+        });
+
+        // Mantieni solo le ultime 20 domande (FIFO)
+        if (questionHistory.length > 20) {
+          // Taglia l'array mantenendo gli ultimi 20 elementi
+          questionHistory = questionHistory.slice(-20);
+        }
+        console.log("Storico domande aggiornato:", questionHistory);
+
         renderQuiz(data.quiz, config.questionType);
         //alertMessage('Quiz generato con successo!', 'success');
       } else {
