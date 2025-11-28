@@ -3,16 +3,23 @@ const express = require("express");
 const cors = require("cors");
 const fetch = require("node-fetch");
 
+// Logging di Inizializzazione Garantito (per debug)
+console.log("--- INIZIALIZZAZIONE FUNZIONE API AVVIATA ---");
+
 // PDF parse
 let pdfParseLib = require("pdf-parse");
 if (typeof pdfParseLib !== "function" && pdfParseLib.default)
   pdfParseLib = pdfParseLib.default;
 
+// *** NUOVO LOG DI VERIFICA ***
 if (!pdfParseLib) {
   console.error(
     "ERRORE: La libreria pdf-parse non è stata caricata correttamente."
   );
+} else {
+  console.log("pdf-parse caricata con successo.");
 }
+// ****************************
 
 const app = express();
 
@@ -54,6 +61,8 @@ const router = express.Router();
 router.post("/extract-text", async (req, res) => {
   // Aggiunto un try...catch generale per catturare errori non previsti
   try {
+    console.log("--- Chiamata all'API: extract-text ---");
+
     // Il frontend DEVE inviare { file: base64String, filename: string, mimetype: string }
     const { file: base64Data, filename, mimetype } = req.body;
 
@@ -77,6 +86,9 @@ router.post("/extract-text", async (req, res) => {
     let fileBuffer;
     try {
       fileBuffer = Buffer.from(base64Data, "base64");
+      console.log(
+        `Buffer creato con successo, dimensione: ${fileBuffer.length} bytes`
+      );
     } catch (e) {
       console.error("Errore decodifica Base64:", e.message);
       return res
@@ -89,6 +101,8 @@ router.post("/extract-text", async (req, res) => {
       let extractedText = "";
 
       if (mimetype === "application/pdf") {
+        console.log("Tentativo di parsing PDF...");
+        // *** INIZIO MODIFICA PER GESTIONE ERRORI PDF ***
         try {
           // Passa un oggetto opzioni vuoto per mantenere la stabilità e la compatibilità
           const options = {};
@@ -105,6 +119,10 @@ router.post("/extract-text", async (req, res) => {
               "Il parser PDF ha restituito testo vuoto. Il file potrebbe essere una scansione o non contenere testo standard (solo formule/immagini)."
             );
           }
+
+          console.log(
+            `Parsing PDF completato. Lunghezza estratta: ${extractedText.length}`
+          );
         } catch (pdfError) {
           // Gestisce gli errori interni di pdf-parse (es. file corrotto, password protetta)
           console.error(
@@ -116,13 +134,16 @@ router.post("/extract-text", async (req, res) => {
             "Errore durante l'analisi del PDF. Controlla il file (potrebbe essere corrotto o protetto)."
           );
         }
+        // *** FINE MODIFICA ***
       } else if (
         mimetype.includes("word") ||
         mimetype.includes("officedocument")
       ) {
         const mammoth = require("mammoth");
+        console.log("Tentativo di parsing DOCX...");
         const result = await mammoth.extractRawText({ buffer: fileBuffer });
         extractedText = result.value;
+        console.log("Parsing DOCX completato.");
       } else {
         // File di testo semplice
         extractedText = fileBuffer.toString("utf8");
@@ -139,6 +160,7 @@ router.post("/extract-text", async (req, res) => {
       });
     }
   } catch (generalError) {
+    // CATTURA GLI ERRORI CHE HANNO SUPERATO I BLOCCHI INTERNI (es. Time-out o Errori di ambiente)
     console.error(
       "Errore FATALE non gestito nell'endpoint /extract-text:",
       generalError.message
@@ -163,7 +185,8 @@ router.post("/generate-quiz", async (req, res) => {
     });
   }
 
-  const { text, config } = req.body;
+  // MODIFICA: Estraiamo anche previousQuestions
+  const { text, config, previousQuestions } = req.body;
 
   // Utilizziamo un oggetto JSON per la configurazione
   const configParams = {
@@ -174,6 +197,22 @@ router.post("/generate-quiz", async (req, res) => {
     numOptions: config.numOptions || 4,
     topic: config.topic || "nella sua interezza",
   };
+
+  // Costruzione della sezione per evitare duplicati
+  let avoidRepetitionPrompt = "";
+  if (
+    previousQuestions &&
+    Array.isArray(previousQuestions) &&
+    previousQuestions.length > 0
+  ) {
+    avoidRepetitionPrompt = `
+ATTENZIONE - STORICO DOMANDE:
+Ho già generato le seguenti domande per questo utente. È FONDAMENTALE che tu generi NUOVE domande diverse da queste (sia nel testo che nel concetto).
+Devi assolutamente evitare domande uguali o simili a quelle che sono già state generate in precendeza. Devi assolutamente e obbligatoriamente considerare lo storico
+ELENCO DOMANDE DA EVITARE:
+${JSON.stringify(previousQuestions)}
+`;
+  }
 
   const systemPrompt = `
 Sei un'API che risponde SOLO ed esclusivamente in JSON, non in altri formati. Non scrivere altro testo.
@@ -189,6 +228,8 @@ PARAMETRI:
 - Numero Domande: ${configParams.numQuestions}
 - Tipo: ${configParams.questionType}
 - Opzioni (se multipla): ${configParams.numOptions}
+
+${avoidRepetitionPrompt}
 
 ISTRUZIONI CRUCIALI PER LA GIUSTIFICAZIONE:
 - Per ogni domanda, devi fornire una **spiegazione dettagliata (giustificazione)** della risposta corretta.
@@ -214,6 +255,17 @@ Devi restituire SOLO un oggetto JSON valido:
   ]
 }
 Se tipo = "open_ended", "risposte" deve essere un array vuoto [] e "corretta" deve essere una stringa vuota "" (o una risposta modello).
+
+REGOLE IMPERATIVE PER LA GENERAZIONE DI NUOVE DOMANDE
+1. Verifica della Storia (Storico Precedente):
+-Se è disponibile uno storico delle domande generate o delle interazioni precedenti, ogni nuova domanda prodotta DEVE essere sottoposta a un controllo di conformità.
+-CONFORMITÀ: La domanda generata DEVE rispettare e mantenere tutti i requisiti, i vincoli e le specifiche stabiliti dalle istruzioni o dalle richieste utente precedenti.
+2. Gestione delle Violazioni:
+-In caso di violazione o mancata aderenza a uno qualsiasi dei requisiti storici, la domanda prodotta deve essere immediatamente SCARTATA.
+-Si DEVE procedere alla RIGENERAZIONE di una nuova domanda completamente differente, sia nel tema che nella formulazione.
+3. Unicità e Originalità del Contenuto:
+-È STRETTAMENTE VIETATO proporre domande identiche o altamente simili (per concetto, struttura o semantica) a quelle già presenti nello storico delle domande. 
+L'obiettivo è massimizzare la varietà e l'originalità.
 `;
 
   try {
@@ -283,8 +335,9 @@ router.post("/extract-mermaid", async (req, res) => {
     let match;
     const mermaidCodeBlocks = [];
 
-    while ((match = mermaidRegex.exec(text)) !== null)
+    while ((match = mermaidRegex.exec(text)) !== null) {
       mermaidCodeBlocks.push(match[1].trim());
+    }
 
     // Restituisce un array di stringhe, dove ogni stringa è un blocco Mermaid puro
     res.json({ mermaid: mermaidCodeBlocks });
