@@ -19,6 +19,8 @@ const katexConfig = {
   throwOnError: false,
 };
 
+let isFileLoaded = false;
+
 // --- ELEMENTI DOM (Selezione completa e sicura) ---
 const fileInput = document.getElementById("fileInput");
 const previewCard = document.getElementById("previewCard");
@@ -125,7 +127,7 @@ async function checkInputFile(e) {
 
   const fileName = file.name;
   const fileExtension = fileName.split(".").pop();
-
+  isFileLoaded = true;
   // 1. Converti in Base64
   let base64Data;
   try {
@@ -228,7 +230,7 @@ async function checkInputFile(e) {
 if (quizForm) {
   quizForm.addEventListener("submit", async (e) => {
     e.preventDefault();
-    if (!extractedTextContent) {
+    if (!isFileLoaded) {
       alertMessage("Carica un file!");
       return;
     }
