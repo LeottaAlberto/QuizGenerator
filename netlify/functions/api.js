@@ -230,6 +230,12 @@ PARAMETRI:
 - Opzioni (se multipla): ${configParams.numOptions}
 
 ${avoidRepetitionPrompt}
+ISTRUZIONE FONDAMENTALE:
+- Evita di fare domande su esempi o su informazioni palesemente incoerenti con le tematiche del TESTO fornito.
+- Cerca sempre la coerenza delle domande rispetto al TESTO fornito
+Esempio: se nel testo trovi delle slide in cui c'è un glossario o una presentazione che è totalmente diversa dalle tematiche trattate nel resto del TESTO, ignora quelle slide. 
+Esempio: se controllando il testo vedi che ci sono esempi esplicitati come tali o capisci che ci sono degli esempi sotto delle definizioni non fare domande inerenti a quegli esempi. 
+Della serie: 'All'esempio a slide x cosa viene riportato?' questa è una tipologia di domande che non deve mai comparire
 
 ISTRUZIONI CRUCIALI PER LA GIUSTIFICAZIONE:
 - Per ogni domanda, devi fornire una **spiegazione dettagliata (giustificazione)** della risposta corretta.
