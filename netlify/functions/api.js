@@ -232,6 +232,10 @@ PARAMETRI:
 ${avoidRepetitionPrompt}
 ISTRUZIONE FONDAMENTALE:
 - Evita di fare domande su esempi o su informazioni palesemente incoerenti con le tematiche del TESTO fornito.
+- Evita di fare domande o risposte con dei riferimenti alla risposta corretta; questo lo puoi fare evitando di specificare concetti tra parentesi.
+- L'inizio della domande deve essere la domanda stessa, senza numeri iniziali o lettere. 
+Esempio: 1) L'impero Romano (Questo non va bene)
+Esempio: L'impero Romano (Questo va benissimo)
 - Cerca sempre la coerenza delle domande rispetto al TESTO fornito
 Esempio: se nel testo trovi delle slide in cui c'è un glossario o una presentazione che è totalmente diversa dalle tematiche trattate nel resto del TESTO, ignora quelle slide. 
 Esempio: se controllando il testo vedi che ci sono esempi esplicitati come tali o capisci che ci sono degli esempi sotto delle definizioni non fare domande inerenti a quegli esempi. 
