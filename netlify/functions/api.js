@@ -259,8 +259,8 @@ Devi restituire SOLO un oggetto JSON valido:
     {
       "domanda": "Testo domanda...",
       "risposte": ["A", "B", ...],
-      "corretta": "A",
-      "spiegazione": "La risposta è corretta perché il testo specifica che '...'."
+      "corretta": "Riportare l'opzione corretta",
+      "spiegazione": "La risposta è '...'."
     }
   ]
 }
