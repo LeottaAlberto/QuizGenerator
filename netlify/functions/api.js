@@ -251,6 +251,16 @@ ISTRUZIONI LATEX:
 - Usa il delimitatore singolo '$' per le formule inline (es: $E=mc^2$).
 - Usa il doppio delimitatore '$$' per blocchi.
 
+ISTRUZIONI PER LA DIFFICOLTÀ (RELATIVA AL TESTO)
+- La difficoltà è determinata dalla profondità del ragionamento richiesto rispetto ai contenuti forniti, non dall'esclusione di argomenti complessi.
+- Semplice: Domande dirette su definizioni, fatti o singoli concetti espliciti.
+- Normale: Domande che richiedono di collegare più informazioni o applicare una regola a un caso pratico.
+- Difficile: Domande che richiedono analisi critica, deduzioni logiche o sintesi di concetti complessi.
+- VINCOLO DI COPERTURA: Il quiz deve obbligatoriamente toccare tutto il contenuto del file o tutti gli argomenti selezionati. La difficoltà deve adattare il modo in cui viene posta la domanda, senza mai escludere parti del testo o temi scelti.
+- Esempio pratico (Testo sulle operazioni di base): 
+    Se viene richiesta una difficoltà normale, le domande avranno una percentuale più alta di probabilità di presentare quesiti che richiedono l'applicazione combinata di due operazioni (es. un problema a due passaggi) 
+    o la comprensione della relazione logica tra esse (es. la divisione come operazione inversa della moltiplicazione). 
+
 FORMATO JSON OBBLIGATORIO:
 Devi restituire SOLO un oggetto JSON valido:
 {
