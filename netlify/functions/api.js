@@ -14,7 +14,7 @@ if (typeof pdfParseLib !== "function" && pdfParseLib.default)
 // *** NUOVO LOG DI VERIFICA ***
 if (!pdfParseLib) {
   console.error(
-    "ERRORE: La libreria pdf-parse non è stata caricata correttamente."
+    "ERRORE: La libreria pdf-parse non è stata caricata correttamente.",
   );
 } else {
   console.log("pdf-parse caricata con successo.");
@@ -46,7 +46,7 @@ function extractJSON(text) {
   } catch (e) {
     console.error(
       "FALLIMENTO PARSING JSON. Contenuto:",
-      text.substring(0, 500) + "..."
+      text.substring(0, 500) + "...",
     );
     return null;
   }
@@ -68,7 +68,7 @@ router.post("/extract-text", async (req, res) => {
 
     if (!base64Data || !mimetype) {
       console.error(
-        "Corpo della richiesta NON CONTIENE Base64 (req.body mancante o malformato)."
+        "Corpo della richiesta NON CONTIENE Base64 (req.body mancante o malformato).",
       );
       return res
         .status(400)
@@ -87,7 +87,7 @@ router.post("/extract-text", async (req, res) => {
     try {
       fileBuffer = Buffer.from(base64Data, "base64");
       console.log(
-        `Buffer creato con successo, dimensione: ${fileBuffer.length} bytes`
+        `Buffer creato con successo, dimensione: ${fileBuffer.length} bytes`,
       );
     } catch (e) {
       console.error("Errore decodifica Base64:", e.message);
@@ -112,26 +112,26 @@ router.post("/extract-text", async (req, res) => {
           // Controllo cruciale: se il testo è vuoto nonostante il parsing sia terminato
           if (extractedText.trim() === "") {
             console.error(
-              "AVVISO: pdf-parse ha restituito testo vuoto. Il PDF potrebbe essere una scansione o contenere solo elementi matematici non estraibili."
+              "AVVISO: pdf-parse ha restituito testo vuoto. Il PDF potrebbe essere una scansione o contenere solo elementi matematici non estraibili.",
             );
             // Lanciamo un errore che verrà catturato dal blocco esterno
             throw new Error(
-              "Il parser PDF ha restituito testo vuoto. Il file potrebbe essere una scansione o non contenere testo standard (solo formule/immagini)."
+              "Il parser PDF ha restituito testo vuoto. Il file potrebbe essere una scansione o non contenere testo standard (solo formule/immagini).",
             );
           }
 
           console.log(
-            `Parsing PDF completato. Lunghezza estratta: ${extractedText.length}`
+            `Parsing PDF completato. Lunghezza estratta: ${extractedText.length}`,
           );
         } catch (pdfError) {
           // Gestisce gli errori interni di pdf-parse (es. file corrotto, password protetta)
           console.error(
             "ERRORE CRITICO durante il parsing PDF:",
-            pdfError.message
+            pdfError.message,
           );
           // Rilancia un errore descrittivo che verrà catturato dal blocco esterno
           throw new Error(
-            "Errore durante l'analisi del PDF. Controlla il file (potrebbe essere corrotto o protetto)."
+            "Errore durante l'analisi del PDF. Controlla il file (potrebbe essere corrotto o protetto).",
           );
         }
         // *** FINE MODIFICA ***
@@ -163,7 +163,7 @@ router.post("/extract-text", async (req, res) => {
     // CATTURA GLI ERRORI CHE HANNO SUPERATO I BLOCCHI INTERNI (es. Time-out o Errori di ambiente)
     console.error(
       "Errore FATALE non gestito nell'endpoint /extract-text:",
-      generalError.message
+      generalError.message,
     );
     // Assicuriamo una risposta JSON valida anche per errori catastrofici
     res.status(500).json({
@@ -177,15 +177,10 @@ router.post("/extract-text", async (req, res) => {
 // ROUTE 2: GENERAZIONE QUIZ (Chiama Gemini) - MODIFICATA
 // -----------------------------------------------------------------
 router.post("/generate-quiz", async (req, res) => {
-  // ⚠️ Controllo per il crash 'Cannot read properties of undefined' (Punto 1.B)
   if (!req.body || !req.body.text || !req.body.config) {
-    console.error("Richiesta generate-quiz malformata. Body:", req.body);
-    return res.status(400).json({
-      error: "Richiesta non valida: 'text' o 'config' mancanti nel corpo.",
-    });
+    return res.status(400).json({ error: "Richiesta non valida." });
   }
 
-  // MODIFICA: Estraiamo anche previousQuestions
   const { text, config, previousQuestions } = req.body;
 
   // Utilizziamo un oggetto JSON per la configurazione
@@ -199,93 +194,64 @@ router.post("/generate-quiz", async (req, res) => {
   };
 
   // Costruzione della sezione per evitare duplicati
-  let avoidRepetitionPrompt = "";
-  if (
+  const historyContext =
     previousQuestions &&
     Array.isArray(previousQuestions) &&
     previousQuestions.length > 0
-  ) {
-    avoidRepetitionPrompt = `
-ATTENZIONE - STORICO DOMANDE:
-Ho già generato le seguenti domande per questo utente. È FONDAMENTALE che tu generi NUOVE domande diverse da queste (sia nel testo che nel concetto).
-Devi assolutamente evitare domande uguali o simili a quelle che sono già state generate in precendeza. Devi assolutamente e obbligatoriamente considerare lo storico
-ELENCO DOMANDE DA EVITARE:
-${JSON.stringify(previousQuestions)}
-`;
-  }
+      ? `\n### STORICO DOMANDE DA NON RIPETERE (EVITA ANCHE I CONCETTI CORRELATI):\n${previousQuestions.join(" | ")}\n`
+      : "";
 
   const systemPrompt = `
-Sei un'API che risponde SOLO ed esclusivamente in JSON, non in altri formati. Non scrivere altro testo.
-Analizza il testo fornito ${
-    configParams.topic !== "nella sua interezza"
-      ? "concentrandoti su: " + configParams.topic
-      : configParams.topic
-  }.
+### RUOLO
+Sei un'API specializzata nella generazione di quiz educativi. Operi esclusivamente producendo codice JSON valido. 
 
-PARAMETRI:
-- Lingua Output: ${configParams.language}
-- Difficoltà: ${configParams.difficulty}
-- Numero Domande: ${configParams.numQuestions}
-- Tipo: ${configParams.questionType}
-- Opzioni (se multipla): ${configParams.numOptions}
+### ANALISI DEL TESTO E TOPIC
+- **Testo da analizzare**: Fornito dall'utente.
+- **Focus Topic**: ${configParams.topic === "nella sua interezza" ? "Analizza tutto il testo fornito." : "Concentrati esclusivamente su: " + configParams.topic}
+- **Lingua di Output**: ${configParams.language} (Obbligatoria, anche se il testo sorgente è in un'altra lingua).
 
+### CONFIGURAZIONE QUIZ
+- **Difficoltà**: ${configParams.difficulty}
+- **Numero Domande**: ${configParams.numQuestions}
+- **Tipo**: ${configParams.questionType}
+- **Opzioni**: ${configParams.numOptions} (solo se multiple_choice)
+
+### REGOLE RIGIDE DI GENERAZIONE (DA SEGUIRE ALLA LETTERA)
+1. **No Metadati**: Non numerare le domande (es. NO "1. Qual è...", SI "Qual è..."). Non includere lettere nelle opzioni (es. NO "A) Testo", SI "Testo").
+2. **Filtro Qualità**: Ignora slide di glossario, presentazioni iniziali, o pagine di "benvenuto" se incoerenti con il corpo principale.
+3. **No Riferimenti ad Esempi**: Non fare mai domande del tipo "Cosa dice l'esempio a pagina X?". Le domande devono essere sui concetti, non sulla struttura del documento.
+4. **No Parentesi Indizio**: Non inserire spiegazioni o indizi tra parentesi all'interno di domande o risposte.
+5. **Formato Aperto (open_ended)**: Se il tipo è open_ended, l'array "risposte" deve essere [] e il campo "corretta" DEVE contenere una risposta modello esaustiva basata sul testo.
+
+### LOGICA DI DIFFICOLTÀ (TARGET: ${configParams.difficulty})
+- **Semplice**: Definizioni e fatti espliciti.
+- **Normale**: Collegamento tra concetti o applicazione di regole.
+- **Difficile**: Analisi critica, deduzioni logiche e sintesi.
+- **Vincolo**: Copri proporzionalmente tutto il testo richiesto adattando la complessità della domanda, non escludendo argomenti.
+
+### GESTIONE STORICO E UNICITÀ (CRUCIALE)
 ${avoidRepetitionPrompt}
-ISTRUZIONE FONDAMENTALE:
-- Evita di fare domande su esempi o su informazioni palesemente incoerenti con le tematiche del TESTO fornito.
-- Evita di fare domande o risposte con dei riferimenti alla risposta corretta; questo lo puoi fare evitando di specificare concetti tra parentesi.
-- L'inizio della domande deve essere la domanda stessa, senza numeri iniziali o lettere. 
-Esempio: 1) L'impero Romano (Questo non va bene)
-Esempio: L'impero Romano (Questo va benissimo)
-- Cerca sempre la coerenza delle domande rispetto al TESTO fornito
-Esempio: se nel testo trovi delle slide in cui c'è un glossario o una presentazione che è totalmente diversa dalle tematiche trattate nel resto del TESTO, ignora quelle slide. 
-Esempio: se controllando il testo vedi che ci sono esempi esplicitati come tali o capisci che ci sono degli esempi sotto delle definizioni non fare domande inerenti a quegli esempi. 
-Della serie: 'All'esempio a slide x cosa viene riportato?' questa è una tipologia di domande che non deve mai comparire
+- **Verifica Antiduplicazione**: Confronta ogni domanda generata con lo STORICO fornito.
+- **Diversità Semantica**: Se lo storico contiene già una domanda su un concetto, non riproporla nemmeno con parole diverse. Cambia sotto-argomento.
+- **Scarto**: Se una domanda viola la diversità, scartala e rigenerala.
 
-ISTRUZIONI CRUCIALI PER LA GIUSTIFICAZIONE:
-- Per ogni domanda, devi fornire una **spiegazione dettagliata (giustificazione)** della risposta corretta.
-- La spiegazione **DEVE** essere basata *esclusivamente* sul contenuto del TESTO fornito. Idealmente, cita la frase o il concetto chiave dal testo.
-- Inserisci la spiegazione nel nuovo campo **"spiegazione"** per ogni oggetto domanda.
+### ISTRUZIONI LATEX
+- Formule inline: $ formula $
+- Formule a blocco: $$ formula $$
 
-ISTRUZIONI LATEX:
-- Se incontri formule matematiche, DEVI scriverle in formato KaTeX/LaTeX.
-- Usa il delimitatore singolo '$' per le formule inline (es: $E=mc^2$).
-- Usa il doppio delimitatore '$$' per blocchi.
-
-ISTRUZIONI PER LA DIFFICOLTÀ (RELATIVA AL TESTO)
-- La difficoltà è determinata dalla profondità del ragionamento richiesto rispetto ai contenuti forniti, non dall'esclusione di argomenti complessi.
-- Semplice: Domande dirette su definizioni, fatti o singoli concetti espliciti.
-- Normale: Domande che richiedono di collegare più informazioni o applicare una regola a un caso pratico.
-- Difficile: Domande che richiedono analisi critica, deduzioni logiche o sintesi di concetti complessi.
-- VINCOLO DI COPERTURA: Il quiz deve obbligatoriamente toccare tutto il contenuto del file o tutti gli argomenti selezionati. La difficoltà deve adattare il modo in cui viene posta la domanda, senza mai escludere parti del testo o temi scelti.
-- Esempio pratico (Testo sulle operazioni di base): 
-    Se viene richiesta una difficoltà normale, le domande avranno una percentuale più alta di probabilità di presentare quesiti che richiedono l'applicazione combinata di due operazioni (es. un problema a due passaggi) 
-    o la comprensione della relazione logica tra esse (es. la divisione come operazione inversa della moltiplicazione). 
-
-FORMATO JSON OBBLIGATORIO:
-Devi restituire SOLO un oggetto JSON valido:
+### FORMATO JSON DI USCITA (OBBLIGATORIO)
+Rispondi SOLO con l'oggetto JSON. Non aggiungere commenti, non aggiungere backtick \`\`\`json. Se violi il formato JSON, il sistema crasha.
 {
   "language": "${configParams.language}",
   "quiz": [
     {
-      "domanda": "Testo domanda...",
-      "risposte": ["A", "B", ...],
-      "corretta": "Riportare l'opzione corretta",
-      "spiegazione": "La risposta è '...'."
+      "domanda": "...",
+      "risposte": ["...", "..."],
+      "corretta": "...",
+      "spiegazione": "..."
     }
   ]
 }
-Se tipo = "open_ended", "risposte" deve essere un array vuoto [] e "corretta" deve essere una stringa vuota "" (o una risposta modello).
-
-REGOLE IMPERATIVE PER LA GENERAZIONE DI NUOVE DOMANDE
-1. Verifica della Storia (Storico Precedente):
--Se è disponibile uno storico delle domande generate o delle interazioni precedenti, ogni nuova domanda prodotta DEVE essere sottoposta a un controllo di conformità.
--CONFORMITÀ: La domanda generata DEVE rispettare e mantenere tutti i requisiti, i vincoli e le specifiche stabiliti dalle istruzioni o dalle richieste utente precedenti.
-2. Gestione delle Violazioni:
--In caso di violazione o mancata aderenza a uno qualsiasi dei requisiti storici, la domanda prodotta deve essere immediatamente SCARTATA.
--Si DEVE procedere alla RIGENERAZIONE di una nuova domanda completamente differente, sia nel tema che nella formulazione.
-3. Unicità e Originalità del Contenuto:
--È STRETTAMENTE VIETATO proporre domande identiche o altamente simili (per concetto, struttura o semantica) a quelle già presenti nello storico delle domande. 
-L'obiettivo è massimizzare la varietà e l'originalità.
 `;
 
   try {
@@ -295,7 +261,7 @@ L'obiettivo è massimizzare la varietà e l'originalità.
       if (!process.env.GEMINI_API_KEY)
         return res.status(500).json({ error: "Manca GEMINI_API_KEY." });
 
-      const modelName = "gemini-2.5-flash"; // Flash è più veloce ed economico per questo task
+      const modelName = "gemini-1.5-flash"; // Nota: 2.0-flash o 1.5-flash sono i nomi corretti attuali
 
       const response = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${process.env.GEMINI_API_KEY}`,
@@ -304,39 +270,49 @@ L'obiettivo è massimizzare la varietà e l'originalità.
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             contents: [
-              { parts: [{ text: systemPrompt + "\n\nTESTO:\n" + text }] },
+              {
+                parts: [
+                  { text: systemPrompt + "\n\nTESTO DA ANALIZZARE:\n" + text },
+                ],
+              },
             ],
+            // AGGIUNTA: Forza Gemini a rispondere in formato JSON a livello di API
+            generationConfig: {
+              responseMimeType: "application/json",
+            },
           }),
-        }
+        },
       );
 
-      const data = await response.json(); // <-- Dati ricevuti (e loggati)
+      const data = await response.json();
 
       if (data.error)
         throw new Error(`Gemini API Error: ${data.error.message}`);
 
-      // Gestione dei candidati (Safety filters)
       if (
         !data.candidates ||
         data.candidates.length === 0 ||
         !data.candidates[0].content
       ) {
-        throw new Error(
-          "Gemini non ha restituito candidati validi (bloccato dai filtri di sicurezza?). Risposta completa nel log."
-        );
+        throw new Error("Gemini non ha restituito candidati validi.");
       }
 
       rawRes = data.candidates[0].content.parts[0].text;
     } else {
-      return res.status(400).json({
-        error: "Ollama locale non funziona su Netlify Cloud. Usa Gemini.",
-      });
+      return res.status(400).json({ error: "Modello non supportato." });
     }
 
-    const json = extractJSON(rawRes);
-    if (!json)
-      throw new Error("Risposta AI non valida (probabile testo non JSON)");
-    res.json(json);
+    // --- PULIZIA E PARSING SICURO ---
+    try {
+      const cleanJson = rawRes.replace(/```json|```/g, "").trim();
+      const jsonObject = JSON.parse(cleanJson);
+
+      // Invio la risposta finale pulita
+      res.json(jsonObject);
+    } catch (parseError) {
+      console.error("Errore parsing JSON. Testo ricevuto:", rawRes);
+      throw new Error("L'AI ha risposto con un formato JSON corrotto.");
+    }
   } catch (error) {
     console.error("Errore generazione:", error.message);
     res.status(500).json({ error: "Errore AI: " + error.message });
@@ -379,7 +355,7 @@ router.post("/extract-mark-down-text", async (req, res) => {
 
     if (!base64Data) {
       console.error(
-        "Richiesta extract-mark-down-text non valida: dati Base64 mancanti."
+        "Richiesta extract-mark-down-text non valida: dati Base64 mancanti.",
       );
       return res
         .status(400)
@@ -419,7 +395,7 @@ router.post("/extract-mark-down-text", async (req, res) => {
   } catch (error) {
     console.error(
       "Errore FATALE in /extract-mark-down-content:",
-      error.message
+      error.message,
     );
     res.status(500).json({
       error:
