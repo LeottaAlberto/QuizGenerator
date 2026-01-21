@@ -230,7 +230,7 @@ Sei un'API specializzata nella generazione di quiz educativi. Operi esclusivamen
 - **Vincolo**: Copri proporzionalmente tutto il testo richiesto adattando la complessità della domanda, non escludendo argomenti.
 
 ### GESTIONE STORICO E UNICITÀ (CRUCIALE)
-${avoidRepetitionPrompt}
+${historyContext}
 - **Verifica Antiduplicazione**: Confronta ogni domanda generata con lo STORICO fornito.
 - **Diversità Semantica**: Se lo storico contiene già una domanda su un concetto, non riproporla nemmeno con parole diverse. Cambia sotto-argomento.
 - **Scarto**: Se una domanda viola la diversità, scartala e rigenerala.
